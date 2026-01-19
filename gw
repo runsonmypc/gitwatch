@@ -81,10 +81,10 @@ tracked=$(git diff --shortstat 2>/dev/null | awk "{
 }")
 newcount=$(git status --porcelain -uall 2>/dev/null | grep -c "^??")
 if [ -n "$tracked" ] && [ "$newcount" -gt 0 ]; then
-  printf "  %s   \033[2m%d new\033[0m\n" "$tracked" "$newcount"
+  printf " %s   \033[2m%d new\033[0m\n" "$tracked" "$newcount"
 elif [ -n "$tracked" ]; then
-  printf "  %s\n" "$tracked"
+  printf " %s\n" "$tracked"
 elif [ "$newcount" -gt 0 ]; then
-  printf "  \033[2m%d new\033[0m\n" "$newcount"
+  printf " \033[2m%d new\033[0m\n" "$newcount"
 fi
 '

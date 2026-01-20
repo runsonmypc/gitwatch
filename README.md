@@ -39,6 +39,10 @@ source ~/.zshrc
 gw  # run in any git repo, q to quit
 ```
 
+## Nerd Fonts (optional)
+
+If you have a [Nerd Font](https://www.nerdfonts.com/) installed, icons are auto-detected and enabled.
+
 ## License
 
 MIT

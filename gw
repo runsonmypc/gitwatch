@@ -1,5 +1,14 @@
 #!/bin/bash
 watch -t -n 1 -c '
+# Icon setup (auto-detect Nerd Fonts)
+if [ -n "$GW_ICONS" ] || ls ~/Library/Fonts/*[Nn]erd* /Library/Fonts/*[Nn]erd* 2>/dev/null | grep -q .; then
+  ICON_BRANCH=$(printf "\xee\x82\xa0")
+  ICON_FILE=$(printf "\xef\x85\x9b")
+else
+  ICON_BRANCH=""
+  ICON_FILE="Δ"
+fi
+
 # Branch + sync status
 branch=$(git branch --show-current)
 upstream=$(git rev-parse --abbrev-ref @{u} 2>/dev/null)
@@ -11,9 +20,9 @@ if [ -n "$upstream" ]; then
   [ "$ahead" -gt 0 ] && sync="${sync} ↑${ahead}"
   [ "$behind" -gt 0 ] && sync="${sync} ↓${behind}"
   [ "$ahead" -eq 0 ] && [ "$behind" -eq 0 ] && sync=" ✓"
-  printf "\033[35m%s\033[0m%s\n" "$branch" "$sync"
+  printf "\033[35m${ICON_BRANCH}%s\033[0m%s\n" "$branch" "$sync"
 else
-  printf "\033[35m%s\033[0m \033[2m(no remote)\033[0m\n" "$branch"
+  printf "\033[35m${ICON_BRANCH}%s\033[0m \033[2m(no remote)\033[0m\n" "$branch"
 fi
 
 echo ""
@@ -74,15 +83,15 @@ tracked=$(git diff --shortstat 2>/dev/null | awk "{
     if(\$i ~ /insertion/) ins=\$(i-1)
     if(\$i ~ /deletion/) del=\$(i-1)
   }
-  if(files) printf \"\033[2m%dΔ\033[0m  \033[32m+%d\033[0m  \033[31m-%d\033[0m\", files, ins, del
+  if(files) printf \"\033[32m+%d\033[0m \033[31m-%d\033[0m \033[2m| %d${ICON_FILE}\033[0m\", ins, del, files
 }")
 newcount=$(git status --porcelain -uall 2>/dev/null | grep -c "^??")
 if [ -n "$tracked" ] && [ "$newcount" -gt 0 ]; then
-  printf " %s   \033[2m%d new\033[0m\n" "$tracked" "$newcount"
+  printf " %s  \033[2m+%d new\033[0m\n" "$tracked" "$newcount"
 elif [ -n "$tracked" ]; then
   printf " %s\n" "$tracked"
 elif [ "$newcount" -gt 0 ]; then
-  printf " \033[2m%d new\033[0m\n" "$newcount"
+  printf " \033[2m+%d new\033[0m\n" "$newcount"
 fi
 
 echo ""

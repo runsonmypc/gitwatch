@@ -12,14 +12,25 @@ Real-time git status monitor for your terminal.
 - Compact summary: `2Δ +57 -3 1 new`
 - Last 3 commits with auto-truncation to fit terminal width
 
+## Requirements
+
+- Git
+- Bash
+- `watch` (pre-installed on Linux; macOS: `brew install watch`)
+
 ## Install
 
 ```bash
-brew install watch  # macOS only
 git clone https://github.com/runsonmypc/gitwatch.git
 cp gitwatch/gw ~/bin/
 chmod +x ~/bin/gw
-echo 'export PATH="$HOME/bin:$PATH"' >> ~/.zshrc
+```
+
+Add `~/bin` to your PATH if not already:
+
+```bash
+echo 'export PATH="$HOME/bin:$PATH"' >> ~/.zshrc  # or ~/.bashrc
+source ~/.zshrc
 ```
 
 ## Usage

@@ -47,6 +47,9 @@ fi
 untracked=$(git status --porcelain -uall | grep "^??" | cut -c4-)
 if [ -n "$untracked" ]; then
   printf "\033[33m◌ untracked\033[0m\n"
+  cols=$(tput cols 2>/dev/null || echo 80)
+  # Reserve space for: " " + name + " | " + number (min 3)
+  maxavail=$((cols - 8))
   # Collect file data and find max widths
   data=""
   maxname=0
@@ -55,9 +58,9 @@ if [ -n "$untracked" ]; then
     lines=$(wc -l < "$file" 2>/dev/null | tr -d " ")
     [ -z "$lines" ] && lines=0
     display="$file"
-    if [ ${#file} -gt 35 ]; then
-      # Truncate at directory boundary like git does
-      tail="${file: -32}"
+    if [ ${#file} -gt $maxavail ]; then
+      # Truncate at directory boundary
+      tail="${file: -$((maxavail - 4))}"
       tail="${tail#*/}"
       display=".../$tail"
     fi

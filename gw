@@ -11,9 +11,9 @@ if [ -n "$upstream" ]; then
   [ "$ahead" -gt 0 ] && sync="${sync} ↑${ahead}"
   [ "$behind" -gt 0 ] && sync="${sync} ↓${behind}"
   [ "$ahead" -eq 0 ] && [ "$behind" -eq 0 ] && sync=" ✓"
-  printf "\033[36m%s\033[0m%s\n" "$branch" "$sync"
+  printf "\033[35m%s\033[0m%s\n" "$branch" "$sync"
 else
-  printf "\033[36m%s\033[0m \033[2m(no remote)\033[0m\n" "$branch"
+  printf "\033[35m%s\033[0m \033[2m(no remote)\033[0m\n" "$branch"
 fi
 
 # Last commit
@@ -24,7 +24,7 @@ echo ""
 # Staged changes (without summary)
 staged=$(git diff --cached --stat --color)
 if [ -n "$staged" ]; then
-  printf "\033[32m● staged\033[0m\n"
+  printf "\033[94m● staged\033[0m\n"
   echo "$staged" | sed "/files\{0,1\} changed/d"
   echo ""
 fi
@@ -32,7 +32,7 @@ fi
 # Unstaged changes (without summary)
 unstaged=$(git diff --stat --color)
 if [ -n "$unstaged" ]; then
-  printf "\033[31m○ unstaged\033[0m\n"
+  printf "\033[36m○ unstaged\033[0m\n"
   echo "$unstaged" | sed "/files\{0,1\} changed/d"
   echo ""
 fi

@@ -16,9 +16,6 @@ else
   printf "\033[35m%s\033[0m \033[2m(no remote)\033[0m\n" "$branch"
 fi
 
-# Last commit
-git log -1 --format="%C(yellow)%h%C(reset) %s %C(dim)(%cr)%C(reset)"
-
 echo ""
 
 # Staged changes (without summary)
@@ -87,4 +84,20 @@ elif [ -n "$tracked" ]; then
 elif [ "$newcount" -gt 0 ]; then
   printf " \033[2m%d new\033[0m\n" "$newcount"
 fi
+
+echo ""
+
+# Last 3 commits (smart truncation based on terminal width)
+cols=$(tput cols 2>/dev/null || echo 40)
+git log -3 --format="%s|%cr" | while IFS="|" read -r msg time; do
+  # Compact time: "3 hours ago" -> "3h"
+  time=$(echo "$time" | sed "s/ seconds\\{0,1\\} ago/s/;s/ minutes\\{0,1\\} ago/m/;s/ hours\\{0,1\\} ago/h/;s/ days\\{0,1\\} ago/d/;s/ weeks\\{0,1\\} ago/w/;s/ months\\{0,1\\} ago/mo/;s/ years\\{0,1\\} ago/y/")
+  timepart=" ($time)"
+  avail=$((cols - ${#timepart} - 1))
+  if [ ${#msg} -gt $avail ]; then
+    msg="${msg:0:$avail}"
+    msg="${msg% *}..."
+  fi
+  printf "\033[2m%s%s\033[0m\n" "$msg" "$timepart"
+done
 '

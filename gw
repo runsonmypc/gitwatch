@@ -111,8 +111,9 @@ else
 fi
 if [ -n "$GW_ICONS" ] || ls ~/Library/Fonts/*[Nn]erd* /Library/Fonts/*[Nn]erd* 2>/dev/null | grep -q .; then
   ICON_CLOUD=$(printf "\xef\x83\x82")
+  ICON_HEAD=$(printf "\xef\x86\x92")      # fa-dot-circle-o (you are here)
   # Conventional commit type icons
-  ICON_FEAT=$(printf "\xef\x81\xa7")      # fa-plus
+  ICON_FEAT=$(printf "\xef\x84\xb5")      # fa-rocket
   ICON_FIX=$(printf "\xef\x82\xad")       # fa-wrench
   ICON_DOCS=$(printf "\xef\x80\xad")      # fa-book
   ICON_STYLE=$(printf "\xef\x87\xbc")     # fa-paint-brush
@@ -125,6 +126,7 @@ if [ -n "$GW_ICONS" ] || ls ~/Library/Fonts/*[Nn]erd* /Library/Fonts/*[Nn]erd* 2
   ICON_REVERT=$(printf "\xef\x83\xa2")    # fa-undo
 else
   ICON_CLOUD="☁"
+  ICON_HEAD="*"
 fi
 head_hash=$(git rev-parse HEAD 2>/dev/null)
 git log -$count --format="%H|%s|%cr" | while IFS="|" read -r hash msg time; do
@@ -160,22 +162,20 @@ git log -$count --format="%H|%s|%cr" | while IFS="|" read -r hash msg time; do
   # Compact time: "3 hours ago" -> "3h"
   time=$(echo "$time" | sed "s/ seconds\\{0,1\\} ago/s/;s/ minutes\\{0,1\\} ago/m/;s/ hours\\{0,1\\} ago/h/;s/ days\\{0,1\\} ago/d/;s/ weeks\\{0,1\\} ago/w/;s/ months\\{0,1\\} ago/mo/;s/ years\\{0,1\\} ago/y/")
   timepart="($time)"
-  prefix=""
   suffix=""
   suffixwidth=0
-  if [ "$hash" = "$head_hash" ]; then
-    prefix="*"
-  else
-    prefix=" "
-  fi
   if [ "$hash" = "$remote_hash" ]; then
     suffix="$ICON_CLOUD"
     suffixwidth=1
   fi
-  avail=$((cols - ${#timepart} - suffixwidth - 2))
+  if [ "$hash" = "$head_hash" ]; then
+    suffix="${suffix}${ICON_HEAD}"
+    suffixwidth=$((suffixwidth + 1))
+  fi
+  avail=$((cols - ${#timepart} - suffixwidth - 1))
   if [ ${#msg} -gt $avail ]; then
     msg="${msg:0:$avail}"
   fi
-  printf "\033[2m%s%s%s%s\033[0m\n" "$prefix" "$msg" "$timepart" "$suffix"
+  printf "\033[2m%s%s%s\033[0m\n" "$msg" "$timepart" "$suffix"
 done
 '

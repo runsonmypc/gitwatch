@@ -111,11 +111,52 @@ else
 fi
 if [ -n "$GW_ICONS" ] || ls ~/Library/Fonts/*[Nn]erd* /Library/Fonts/*[Nn]erd* 2>/dev/null | grep -q .; then
   ICON_CLOUD=$(printf "\xef\x83\x82")
+  # Conventional commit type icons
+  ICON_FEAT=$(printf "\xef\x81\xa7")      # fa-plus
+  ICON_FIX=$(printf "\xef\x82\xad")       # fa-wrench
+  ICON_DOCS=$(printf "\xef\x80\xad")      # fa-book
+  ICON_STYLE=$(printf "\xef\x87\xbc")     # fa-paint-brush
+  ICON_REFACTOR=$(printf "\xef\x80\xa1")  # fa-refresh
+  ICON_TEST=$(printf "\xef\x83\x83")      # fa-flask
+  ICON_CHORE=$(printf "\xef\x80\x93")     # fa-cog
+  ICON_PERF=$(printf "\xef\x83\xa7")      # fa-bolt
+  ICON_CI=$(printf "\xef\x82\x85")        # fa-cogs
+  ICON_BUILD=$(printf "\xef\x86\xb2")     # fa-cube
+  ICON_REVERT=$(printf "\xef\x83\xa2")    # fa-undo
 else
   ICON_CLOUD="☁"
 fi
 head_hash=$(git rev-parse HEAD 2>/dev/null)
 git log -$count --format="%H|%s|%cr" | while IFS="|" read -r hash msg time; do
+  # Transform conventional commits to icons (Nerd Fonts only)
+  if [ -n "$ICON_FEAT" ]; then
+    # Scoped: "type(scope): msg" → "icon scope: msg"
+    msg=$(echo "$msg" | sed \
+      -e "s/^feat(\([^)]*\)): /$ICON_FEAT\1: /" \
+      -e "s/^fix(\([^)]*\)): /$ICON_FIX\1: /" \
+      -e "s/^docs(\([^)]*\)): /$ICON_DOCS\1: /" \
+      -e "s/^style(\([^)]*\)): /$ICON_STYLE\1: /" \
+      -e "s/^refactor(\([^)]*\)): /$ICON_REFACTOR\1: /" \
+      -e "s/^test(\([^)]*\)): /$ICON_TEST\1: /" \
+      -e "s/^chore(\([^)]*\)): /$ICON_CHORE\1: /" \
+      -e "s/^perf(\([^)]*\)): /$ICON_PERF\1: /" \
+      -e "s/^ci(\([^)]*\)): /$ICON_CI\1: /" \
+      -e "s/^build(\([^)]*\)): /$ICON_BUILD\1: /" \
+      -e "s/^revert(\([^)]*\)): /$ICON_REVERT\1: /")
+    # Scopeless: "type: msg" → "icon msg"
+    msg=$(echo "$msg" | sed \
+      -e "s/^feat: /$ICON_FEAT/" \
+      -e "s/^fix: /$ICON_FIX/" \
+      -e "s/^docs: /$ICON_DOCS/" \
+      -e "s/^style: /$ICON_STYLE/" \
+      -e "s/^refactor: /$ICON_REFACTOR/" \
+      -e "s/^test: /$ICON_TEST/" \
+      -e "s/^chore: /$ICON_CHORE/" \
+      -e "s/^perf: /$ICON_PERF/" \
+      -e "s/^ci: /$ICON_CI/" \
+      -e "s/^build: /$ICON_BUILD/" \
+      -e "s/^revert: /$ICON_REVERT/")
+  fi
   # Compact time: "3 hours ago" -> "3h"
   time=$(echo "$time" | sed "s/ seconds\\{0,1\\} ago/s/;s/ minutes\\{0,1\\} ago/m/;s/ hours\\{0,1\\} ago/h/;s/ days\\{0,1\\} ago/d/;s/ weeks\\{0,1\\} ago/w/;s/ months\\{0,1\\} ago/mo/;s/ years\\{0,1\\} ago/y/")
   timepart="($time)"

@@ -118,7 +118,7 @@ head_hash=$(git rev-parse HEAD 2>/dev/null)
 git log -$count --format="%H|%s|%cr" | while IFS="|" read -r hash msg time; do
   # Compact time: "3 hours ago" -> "3h"
   time=$(echo "$time" | sed "s/ seconds\\{0,1\\} ago/s/;s/ minutes\\{0,1\\} ago/m/;s/ hours\\{0,1\\} ago/h/;s/ days\\{0,1\\} ago/d/;s/ weeks\\{0,1\\} ago/w/;s/ months\\{0,1\\} ago/mo/;s/ years\\{0,1\\} ago/y/")
-  timepart=" ($time)"
+  timepart="($time)"
   prefix=""
   suffix=""
   suffixwidth=0

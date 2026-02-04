@@ -9,6 +9,9 @@ else
   ICON_FILE="Δ"
 fi
 
+# Track lines used for dynamic commit count
+lines_used=0
+
 # Branch + sync status
 branch=$(git branch --show-current)
 upstream=$(git rev-parse --abbrev-ref @{u} 2>/dev/null)
@@ -24,23 +27,31 @@ if [ -n "$upstream" ]; then
 else
   printf "\033[35m${ICON_BRANCH}%s\033[0m \033[2m(no remote)\033[0m\n" "$branch"
 fi
+lines_used=$((lines_used + 1))
 
 echo ""
+lines_used=$((lines_used + 1))
 
 # Staged changes (without summary)
 staged=$(git diff --cached --stat --color)
 if [ -n "$staged" ]; then
   printf "\033[94m● staged\033[0m\n"
-  echo "$staged" | sed "/files\{0,1\} changed/d"
+  staged_output=$(echo "$staged" | sed "/files\{0,1\} changed/d")
+  echo "$staged_output"
   echo ""
+  staged_lines=$(echo "$staged_output" | wc -l | tr -d " ")
+  lines_used=$((lines_used + 1 + staged_lines + 1))
 fi
 
 # Unstaged changes (without summary)
 unstaged=$(git diff --stat --color)
 if [ -n "$unstaged" ]; then
   printf "\033[36m○ unstaged\033[0m\n"
-  echo "$unstaged" | sed "/files\{0,1\} changed/d"
+  unstaged_output=$(echo "$unstaged" | sed "/files\{0,1\} changed/d")
+  echo "$unstaged_output"
   echo ""
+  unstaged_lines=$(echo "$unstaged_output" | wc -l | tr -d " ")
+  lines_used=$((lines_used + 1 + unstaged_lines + 1))
 fi
 
 # Untracked files
@@ -54,6 +65,7 @@ if [ -n "$untracked" ]; then
   data=""
   maxname=0
   maxlines=0
+  untracked_count=0
   while read -r file; do
     lines=$(wc -l < "$file" 2>/dev/null | tr -d " ")
     [ -z "$lines" ] && lines=0
@@ -67,6 +79,7 @@ if [ -n "$untracked" ]; then
     [ ${#display} -gt $maxname ] && maxname=${#display}
     [ $lines -gt $maxlines ] && maxlines=$lines
     data="${data}${display}|${lines}\n"
+    untracked_count=$((untracked_count + 1))
   done <<< "$untracked"
   # Calculate number width
   numwidth=${#maxlines}
@@ -76,6 +89,7 @@ if [ -n "$untracked" ]; then
     [ -n "$name" ] && printf " %-${maxname}s | \033[33m%${numwidth}d\033[0m\n" "$name" "$count"
   done
   echo ""
+  lines_used=$((lines_used + 1 + untracked_count + 1))
 fi
 
 # Summary at the bottom
@@ -91,23 +105,33 @@ tracked=$(git diff --shortstat 2>/dev/null | awk "{
 newcount=$(git status --porcelain -uall 2>/dev/null | grep -c "^??")
 if [ -n "$tracked" ] && [ "$newcount" -gt 0 ]; then
   printf " %s  \033[2m+%d new\033[0m\n" "$tracked" "$newcount"
+  lines_used=$((lines_used + 1))
 elif [ -n "$tracked" ]; then
   printf " %s\n" "$tracked"
+  lines_used=$((lines_used + 1))
 elif [ "$newcount" -gt 0 ]; then
   printf " \033[2m+%d new\033[0m\n" "$newcount"
+  lines_used=$((lines_used + 1))
 fi
 
 echo ""
+lines_used=$((lines_used + 1))
 
-# Commits (show enough to reach remote, min 3)
+# Commits (fill remaining vertical space)
 cols=$(tput cols 2>/dev/null || echo 40)
+rows=$(tput lines 2>/dev/null || echo 24)
 remote_hash=$(git rev-parse @{u} 2>/dev/null)
+avail_rows=$((rows - lines_used))
+[ $avail_rows -lt 1 ] && avail_rows=1
 if [ -n "$remote_hash" ]; then
   ahead=$(git rev-list --count @{u}..HEAD 2>/dev/null || echo 0)
-  count=$((ahead + 1))
-  [ $count -lt 3 ] && count=3
+  min_count=$((ahead + 1))
+  [ $min_count -lt 3 ] && min_count=3
+  count=$avail_rows
+  [ $count -lt $min_count ] && count=$min_count
 else
-  count=3
+  count=$avail_rows
+  [ $count -lt 3 ] && count=3
 fi
 if [ -n "$GW_ICONS" ] || ls ~/Library/Fonts/*[Nn]erd* /Library/Fonts/*[Nn]erd* 2>/dev/null | grep -q .; then
   ICON_CLOUD=$(printf "\xef\x83\x82")
@@ -134,30 +158,30 @@ git log -$count --format="%H|%s|%cr" | while IFS="|" read -r hash msg time; do
   if [ -n "$ICON_FEAT" ]; then
     # Scoped: "type(scope): msg" → "icon scope: msg"
     msg=$(echo "$msg" | sed \
-      -e "s/^feat(\([^)]*\)): /$ICON_FEAT\1: /" \
-      -e "s/^fix(\([^)]*\)): /$ICON_FIX\1: /" \
-      -e "s/^docs(\([^)]*\)): /$ICON_DOCS\1: /" \
-      -e "s/^style(\([^)]*\)): /$ICON_STYLE\1: /" \
-      -e "s/^refactor(\([^)]*\)): /$ICON_REFACTOR\1: /" \
-      -e "s/^test(\([^)]*\)): /$ICON_TEST\1: /" \
-      -e "s/^chore(\([^)]*\)): /$ICON_CHORE\1: /" \
-      -e "s/^perf(\([^)]*\)): /$ICON_PERF\1: /" \
-      -e "s/^ci(\([^)]*\)): /$ICON_CI\1: /" \
-      -e "s/^build(\([^)]*\)): /$ICON_BUILD\1: /" \
-      -e "s/^revert(\([^)]*\)): /$ICON_REVERT\1: /")
+      -e "s/^feat(\([^)]*\)): /$ICON_FEAT \1: /" \
+      -e "s/^fix(\([^)]*\)): /$ICON_FIX \1: /" \
+      -e "s/^docs(\([^)]*\)): /$ICON_DOCS \1: /" \
+      -e "s/^style(\([^)]*\)): /$ICON_STYLE \1: /" \
+      -e "s/^refactor(\([^)]*\)): /$ICON_REFACTOR \1: /" \
+      -e "s/^test(\([^)]*\)): /$ICON_TEST \1: /" \
+      -e "s/^chore(\([^)]*\)): /$ICON_CHORE \1: /" \
+      -e "s/^perf(\([^)]*\)): /$ICON_PERF \1: /" \
+      -e "s/^ci(\([^)]*\)): /$ICON_CI \1: /" \
+      -e "s/^build(\([^)]*\)): /$ICON_BUILD \1: /" \
+      -e "s/^revert(\([^)]*\)): /$ICON_REVERT \1: /")
     # Scopeless: "type: msg" → "icon msg"
     msg=$(echo "$msg" | sed \
-      -e "s/^feat: /$ICON_FEAT/" \
-      -e "s/^fix: /$ICON_FIX/" \
-      -e "s/^docs: /$ICON_DOCS/" \
-      -e "s/^style: /$ICON_STYLE/" \
-      -e "s/^refactor: /$ICON_REFACTOR/" \
-      -e "s/^test: /$ICON_TEST/" \
-      -e "s/^chore: /$ICON_CHORE/" \
-      -e "s/^perf: /$ICON_PERF/" \
-      -e "s/^ci: /$ICON_CI/" \
-      -e "s/^build: /$ICON_BUILD/" \
-      -e "s/^revert: /$ICON_REVERT/")
+      -e "s/^feat: /$ICON_FEAT /" \
+      -e "s/^fix: /$ICON_FIX /" \
+      -e "s/^docs: /$ICON_DOCS /" \
+      -e "s/^style: /$ICON_STYLE /" \
+      -e "s/^refactor: /$ICON_REFACTOR /" \
+      -e "s/^test: /$ICON_TEST /" \
+      -e "s/^chore: /$ICON_CHORE /" \
+      -e "s/^perf: /$ICON_PERF /" \
+      -e "s/^ci: /$ICON_CI /" \
+      -e "s/^build: /$ICON_BUILD /" \
+      -e "s/^revert: /$ICON_REVERT /")
   fi
   # Compact time: "3 hours ago" -> "3h"
   time=$(echo "$time" | sed "s/ seconds\\{0,1\\} ago/s/;s/ minutes\\{0,1\\} ago/m/;s/ hours\\{0,1\\} ago/h/;s/ days\\{0,1\\} ago/d/;s/ weeks\\{0,1\\} ago/w/;s/ months\\{0,1\\} ago/mo/;s/ years\\{0,1\\} ago/y/")

@@ -12,7 +12,7 @@ Real-time git status monitor for your terminal.
 - Compact summary: `+57 -3 | 2Δ  +1 new`
 - Commit history fills available terminal height
 - HEAD and remote indicators on commit lines (◎ and ☁)
-- Conventional commit icons: `feat:` → , `fix:` → , `docs:` → , etc.
+- Conventional commit icons: `feat:` `fix:` `docs:` etc. replaced with Nerd Font icons
 
 ## Requirements
 
@@ -46,7 +46,7 @@ gw  # run in any git repo, q to quit
 If you have a [Nerd Font](https://www.nerdfonts.com/) installed, icons are auto-detected and enabled:
 
 - Branch, file count, HEAD, and remote indicators use icons
-- Conventional commit prefixes become icons (feat→, fix→, docs→, etc.)
+- Conventional commit prefixes (`feat:`, `fix:`, `docs:`, etc.) become icons
 
 ## License
 

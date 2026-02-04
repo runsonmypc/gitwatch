@@ -12,6 +12,7 @@ Real-time git status monitor for your terminal.
 - Compact summary: `+57 -3 | 2Δ  +1 new`
 - Commit history fills available terminal height
 - HEAD and remote indicators on commit lines (◎ and ☁)
+- Conventional commit icons: `feat:` → , `fix:` → , `docs:` → , etc.
 
 ## Requirements
 

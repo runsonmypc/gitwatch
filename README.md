@@ -9,8 +9,9 @@ Real-time git status monitor for your terminal.
 - Branch with sync status (✓ synced, ↑N ahead, ↓N behind)
 - Staged / unstaged / untracked files with line counts
 - Smart path truncation at directory boundaries
-- Compact summary: `2Δ +57 -3 1 new`
-- Last 3 commits with auto-truncation to fit terminal width
+- Compact summary: `+57 -3 | 2Δ  +1 new`
+- Commit history fills available terminal height
+- HEAD and remote indicators on commit lines (◎ and ☁)
 
 ## Requirements
 
@@ -41,7 +42,10 @@ gw  # run in any git repo, q to quit
 
 ## Nerd Fonts (optional)
 
-If you have a [Nerd Font](https://www.nerdfonts.com/) installed, icons are auto-detected and enabled.
+If you have a [Nerd Font](https://www.nerdfonts.com/) installed, icons are auto-detected and enabled:
+
+- Branch, file count, HEAD, and remote indicators use icons
+- Conventional commit prefixes become icons (feat→, fix→, docs→, etc.)
 
 ## License
 

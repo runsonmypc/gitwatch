@@ -140,7 +140,7 @@ if [ -n "$GW_ICONS" ] || ls ~/Library/Fonts/*[Nn]erd* /Library/Fonts/*[Nn]erd* 2
   ICON_FEAT=$(printf "\xef\x84\xb5")      # fa-rocket
   ICON_FIX=$(printf "\xef\x82\xad")       # fa-wrench
   ICON_DOCS=$(printf "\xef\x80\xad")      # fa-book
-  ICON_STYLE=$(printf "\xef\x87\xbc")     # fa-paint-brush
+  ICON_STYLE=$(printf "\xee\x88\xab")     # fae-palette_color
   ICON_REFACTOR=$(printf "\xef\x80\xa1")  # fa-refresh
   ICON_TEST=$(printf "\xef\x83\x83")      # fa-flask
   ICON_CHORE=$(printf "\xef\x80\x93")     # fa-cog

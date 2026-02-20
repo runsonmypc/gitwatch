@@ -55,7 +55,7 @@ if [ -n "$unstaged" ]; then
 fi
 
 # Untracked files
-untracked=$(git status --porcelain -uall | grep "^??" | cut -c4-)
+untracked=$(git status --porcelain -uall | grep "^??" | cut -c4- | sed "s/^\"//;s/\"$//")
 if [ -n "$untracked" ]; then
   printf "\033[33m◌ untracked\033[0m\n"
   cols=$(tput cols 2>/dev/null || echo 80)

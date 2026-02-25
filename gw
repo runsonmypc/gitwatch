@@ -19,6 +19,8 @@ if [ -n "$upstream" ]; then
   counts=$(git rev-list --left-right --count $upstream...HEAD 2>/dev/null)
   behind=$(echo $counts | awk "{print \$1}")
   ahead=$(echo $counts | awk "{print \$2}")
+  [ -z "$ahead" ] && ahead=0
+  [ -z "$behind" ] && behind=0
   sync=""
   [ "$ahead" -gt 0 ] && sync="${sync} ↑${ahead}"
   [ "$behind" -gt 0 ] && sync="${sync} ↓${behind}"

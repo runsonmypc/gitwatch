@@ -157,6 +157,7 @@ if [ -n "$GW_ICONS" ] || ls ~/Library/Fonts/*[Nn]erd* /Library/Fonts/*[Nn]erd* 2
   ICON_REVERT=$(printf "\xef\x83\xa2")    # fa-undo
   ICON_SKILL=$(printf "\xef\x83\xaa")     # fa-clipboard
   ICON_CASE=$(printf "\xef\x82\xb1")      # fa-briefcase
+  ICON_TOOL=$(printf "\xee\xb8\x9b")      # fa-toolbox
 else
   ICON_CLOUD="☁"
   ICON_HEAD="*"
@@ -179,7 +180,10 @@ git log -$count --format="%H|%s|%cr" | while IFS="|" read -r hash msg time; do
       -e "s/^build(\([^)]*\)): /$ICON_BUILD \1: /" \
       -e "s/^revert(\([^)]*\)): /$ICON_REVERT \1: /" \
       -e "s/^skill(\([^)]*\)): /$ICON_SKILL \1: /" \
-      -e "s/^case(\([^)]*\)): /$ICON_CASE \1: /")
+      -e "s/^case(\([^)]*\)): /$ICON_CASE \1: /" \
+      -e "s/^cases(\([^)]*\)): /$ICON_CASE \1: /" \
+      -e "s/^tool(\([^)]*\)): /$ICON_TOOL \1: /" \
+      -e "s/^tools(\([^)]*\)): /$ICON_TOOL \1: /")
     # Scopeless: "type: msg" → "icon msg"
     msg=$(echo "$msg" | sed \
       -e "s/^feat: /$ICON_FEAT /" \
@@ -194,7 +198,10 @@ git log -$count --format="%H|%s|%cr" | while IFS="|" read -r hash msg time; do
       -e "s/^build: /$ICON_BUILD /" \
       -e "s/^revert: /$ICON_REVERT /" \
       -e "s/^skill: /$ICON_SKILL /" \
-      -e "s/^case: /$ICON_CASE /")
+      -e "s/^case: /$ICON_CASE /" \
+      -e "s/^cases: /$ICON_CASE /" \
+      -e "s/^tool: /$ICON_TOOL /" \
+      -e "s/^tools: /$ICON_TOOL /")
   fi
   # Compact time: "3 hours ago" -> "3h"
   time=$(echo "$time" | sed "s/ seconds\\{0,1\\} ago/s/;s/ minutes\\{0,1\\} ago/m/;s/ hours\\{0,1\\} ago/h/;s/ days\\{0,1\\} ago/d/;s/ weeks\\{0,1\\} ago/w/;s/ months\\{0,1\\} ago/mo/;s/ years\\{0,1\\} ago/y/")

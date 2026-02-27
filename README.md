@@ -46,7 +46,7 @@ gw  # run in any git repo, q to quit
 If you have a [Nerd Font](https://www.nerdfonts.com/) installed, icons are auto-detected and enabled:
 
 - Branch, file count, HEAD, and remote indicators use icons
-- Conventional commit prefixes (`feat:`, `fix:`, `docs:`, `style:`, `refactor:`, `test:`, `chore:`, `perf:`, `ci:`, `build:`, `revert:`, `skill:`, `case:`/`cases:`, `tool:`/`tools:`, `spec:`/`specs:`/`openspec:`/`openspecs:`, `experiment:`/`experiments:`) become icons
+- Conventional commit prefixes (`feat:`, `fix:`, `docs:`, `style:`, `refactor:`, `test:`, `chore:`, `perf:`, `ci:`, `build:`, `revert:`, `skill:`, `case:`/`cases:`, `tool:`/`tools:`, `spec:`/`specs:`/`openspec:`/`openspecs:`, `experiment:`/`experiments:`, `delete:`) become icons
 
 ## License
 

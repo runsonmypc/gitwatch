@@ -163,6 +163,7 @@ if [ -n "$GW_ICONS" ] || ls ~/Library/Fonts/*[Nn]erd* /Library/Fonts/*[Nn]erd* 2
   ICON_DELETE=$(printf "\xef\x87\xb8")    # fa-trash
   ICON_CALIBRATE=$(printf "\xf3\xb0\x8d\x98") # md-math_compass
   ICON_SETTINGS=$(printf "\xef\x87\x9e")     # fa-sliders
+  ICON_MERGE=$(printf "\xee\x9c\xa7")        # dev-git_merge
 else
   ICON_CLOUD="☁"
   ICON_HEAD="*"
@@ -199,7 +200,8 @@ git log -$count --format="%H|%s|%cr" | while IFS="|" read -r hash msg time; do
       -e "s/^calibrate(\([^)]*\)): /$ICON_CALIBRATE \1: /" \
       -e "s/^calibration(\([^)]*\)): /$ICON_CALIBRATE \1: /" \
       -e "s/^settings(\([^)]*\)): /$ICON_SETTINGS \1: /" \
-      -e "s/^config(\([^)]*\)): /$ICON_SETTINGS \1: /")
+      -e "s/^config(\([^)]*\)): /$ICON_SETTINGS \1: /" \
+      -e "s/^merge(\([^)]*\)): /$ICON_MERGE \1: /")
     # Scopeless: "type: msg" → "icon msg"
     msg=$(echo "$msg" | sed \
       -e "s/^feat: /$ICON_FEAT /" \
@@ -228,7 +230,8 @@ git log -$count --format="%H|%s|%cr" | while IFS="|" read -r hash msg time; do
       -e "s/^calibrate: /$ICON_CALIBRATE /" \
       -e "s/^calibration: /$ICON_CALIBRATE /" \
       -e "s/^settings: /$ICON_SETTINGS /" \
-      -e "s/^config: /$ICON_SETTINGS /")
+      -e "s/^config: /$ICON_SETTINGS /" \
+      -e "s/^merge: /$ICON_MERGE /")
   fi
   # Compact time: "3 hours ago" -> "3h"
   time=$(echo "$time" | sed "s/ seconds\\{0,1\\} ago/s/;s/ minutes\\{0,1\\} ago/m/;s/ hours\\{0,1\\} ago/h/;s/ days\\{0,1\\} ago/d/;s/ weeks\\{0,1\\} ago/w/;s/ months\\{0,1\\} ago/mo/;s/ years\\{0,1\\} ago/y/")

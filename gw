@@ -12,28 +12,8 @@ fi
 # Track lines used for dynamic commit count
 lines_used=0
 
-# Truncate individual path/branch segments over 15 chars
-trunc_segs() {
-  local p="$1" r="" s; IFS="/" read -ra _p <<< "$p"
-  for s in "${_p[@]}"; do
-    [ -n "$r" ] && r="$r/"
-    [ ${#s} -gt 15 ] && s="${s:0:15}…"
-    r="${r}${s}"
-  done; echo "$r"
-}
-trunc_stat() {
-  while IFS= read -r line; do
-    if [[ "$line" == *"|"* ]]; then
-      local pp="${line%%|*}" rest="|${line#*|}"
-      pp=$(echo "$pp" | sed "s/^ *//;s/ *$//")
-      printf " %s %s\n" "$(trunc_segs "$pp")" "$rest"
-    else echo "$line"; fi
-  done
-}
-
 # Branch + sync status
 branch=$(git branch --show-current)
-display_branch=$(trunc_segs "$branch")
 upstream=$(git rev-parse --abbrev-ref @{u} 2>/dev/null)
 if [ -n "$upstream" ]; then
   counts=$(git rev-list --left-right --count $upstream...HEAD 2>/dev/null)
@@ -45,9 +25,9 @@ if [ -n "$upstream" ]; then
   [ "$ahead" -gt 0 ] && sync="${sync} ↑${ahead}"
   [ "$behind" -gt 0 ] && sync="${sync} ↓${behind}"
   [ "$ahead" -eq 0 ] && [ "$behind" -eq 0 ] && sync=" ✓"
-  printf "\033[35m${ICON_BRANCH}%s\033[0m%s\n" "$display_branch" "$sync"
+  printf "\033[35m${ICON_BRANCH}%s\033[0m%s\n" "$branch" "$sync"
 else
-  printf "\033[35m${ICON_BRANCH}%s\033[0m \033[2m(no remote)\033[0m\n" "$display_branch"
+  printf "\033[35m${ICON_BRANCH}%s\033[0m \033[2m(no remote)\033[0m\n" "$branch"
 fi
 lines_used=$((lines_used + 1))
 
@@ -58,7 +38,7 @@ lines_used=$((lines_used + 1))
 staged=$(git diff --cached --stat --color)
 if [ -n "$staged" ]; then
   printf "\033[94m● staged\033[0m\n"
-  staged_output=$(echo "$staged" | sed "/files\{0,1\} changed/d" | trunc_stat)
+  staged_output=$(echo "$staged" | sed "/files\{0,1\} changed/d")
   echo "$staged_output"
   echo ""
   staged_lines=$(echo "$staged_output" | wc -l | tr -d " ")
@@ -69,7 +49,7 @@ fi
 unstaged=$(git diff --stat --color)
 if [ -n "$unstaged" ]; then
   printf "\033[36m○ unstaged\033[0m\n"
-  unstaged_output=$(echo "$unstaged" | sed "/files\{0,1\} changed/d" | trunc_stat)
+  unstaged_output=$(echo "$unstaged" | sed "/files\{0,1\} changed/d")
   echo "$unstaged_output"
   echo ""
   unstaged_lines=$(echo "$unstaged_output" | wc -l | tr -d " ")
@@ -102,9 +82,9 @@ if [ -n "$untracked" ]; then
   maxname=0
   while IFS="|" read -r file lines; do
     [ -z "$file" ] && continue
-    display=$(trunc_segs "$file")
-    if [ ${#display} -gt $maxavail ]; then
-      tail="${display: -$((maxavail - 4))}"
+    display="$file"
+    if [ ${#file} -gt $maxavail ]; then
+      tail="${file: -$((maxavail - 4))}"
       tail="${tail#*/}"
       display=".../$tail"
     fi

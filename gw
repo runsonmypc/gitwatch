@@ -1,7 +1,15 @@
 #!/bin/bash
-watch -t -n 1 -c '
+# `watch` runs its command via `sh -c`, which on many Linux distros (Pop!_OS,
+# Debian, Ubuntu) is dash — and dash chokes on the bashisms below (here-strings,
+# substring expansion). Re-exec ourselves under bash via watch to guarantee the
+# render body actually runs in bash.
+SCRIPT_PATH="${BASH_SOURCE[0]}"
+if [ "$1" != "--render" ]; then
+  exec watch -t -n 1 -c "bash '$SCRIPT_PATH' --render"
+fi
+
 # Icon setup (auto-detect Nerd Fonts)
-if [ -n "$GW_ICONS" ] || ls ~/Library/Fonts/*[Nn]erd* /Library/Fonts/*[Nn]erd* 2>/dev/null | grep -q .; then
+if [ -n "$GW_ICONS" ] || ls ~/Library/Fonts/*[Nn]erd* /Library/Fonts/*[Nn]erd* 2>/dev/null | grep -q . || (command -v fc-list >/dev/null 2>&1 && fc-list 2>/dev/null | grep -qi "nerd font"); then
   ICON_BRANCH=$(printf "\xee\x82\xa0")
   ICON_FILE=$(printf "\xef\x85\x9b")
 else
@@ -140,7 +148,7 @@ else
   count=$avail_rows
   [ $count -lt 3 ] && count=3
 fi
-if [ -n "$GW_ICONS" ] || ls ~/Library/Fonts/*[Nn]erd* /Library/Fonts/*[Nn]erd* 2>/dev/null | grep -q .; then
+if [ -n "$GW_ICONS" ] || ls ~/Library/Fonts/*[Nn]erd* /Library/Fonts/*[Nn]erd* 2>/dev/null | grep -q . || (command -v fc-list >/dev/null 2>&1 && fc-list 2>/dev/null | grep -qi "nerd font"); then
   ICON_CLOUD=$(printf "\xef\x83\x82")
   ICON_HEAD=$(printf "\xef\x86\x92")      # fa-dot-circle-o (you are here)
   # Conventional commit type icons
@@ -252,4 +260,3 @@ git log -$count --format="%H|%s|%cr" | while IFS="|" read -r hash msg time; do
   fi
   printf "\033[2m%s%s%s\033[0m\n" "$msg" "$timepart" "$suffix"
 done
-'

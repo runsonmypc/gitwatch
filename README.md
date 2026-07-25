@@ -7,8 +7,9 @@ Real-time git status monitor for your terminal.
 ## Features
 
 - Branch with sync status (✓ synced, ↑N ahead, ↓N behind)
-- Staged / unstaged / untracked files with line counts
-- Smart path truncation at directory boundaries
+- Staged / unstaged / untracked files with line counts (`+27 -7`)
+- Binary files show a signed size delta (`+98K`, `-2K`) instead of `Bin 0 -> 100251 bytes`
+- Smart path truncation at directory boundaries — lines always fit the terminal
 - Compact summary: `+57 -3 | 2Δ  +1 new`
 - Commit history fills available terminal height
 - HEAD and remote indicators on commit lines (◎ and ☁)
@@ -46,7 +47,7 @@ gw  # run in any git repo, q to quit
 If you have a [Nerd Font](https://www.nerdfonts.com/) installed, icons are auto-detected and enabled:
 
 - Branch, file count, HEAD, and remote indicators use icons
-- Conventional commit prefixes (`feat:`, `fix:`, `docs:`, `style:`, `refactor:`, `test:`, `chore:`, `perf:`, `ci:`, `build:`, `revert:`, `skill:`, `case:`/`cases:`, `tool:`/`tools:`, `spec:`/`specs:`/`openspec:`/`openspecs:`, `experiment:`/`experiments:`, `delete:`) become icons
+- Conventional commit prefixes (`feat:`, `fix:`, `docs:`, `style:`, `refactor:`, `test:`, `chore:`, `perf:`, `ci:`, `build:`, `revert:`, `skill:`, `case:`/`cases:`, `tool:`/`tools:`, `spec:`/`specs:`/`openspec:`/`openspecs:`, `experiment:`/`experiments:`, `delete:`, `calibrate:`/`calibration:`, `settings:`/`config:`, `merge:`) become icons
 
 ## License
 

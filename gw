@@ -5,7 +5,14 @@
 # render body actually runs in bash.
 SCRIPT_PATH="${BASH_SOURCE[0]}"
 if [ "$1" != "--render" ]; then
-  exec watch -t -n 1 -c "bash '$SCRIPT_PATH' --render"
+  # Optional procps-ng flags, feature-detected so older watch builds still run:
+  #   -w  truncate long lines instead of wrapping them
+  #   -s  write stray screenshots (the "s" key) to a temp dir, not the repo
+  WHELP=$(watch --help 2>&1)
+  WOPTS=()
+  case "$WHELP" in *--no-wrap*) WOPTS+=(-w) ;; esac
+  case "$WHELP" in *--shotsdir*) WOPTS+=(-s "${TMPDIR:-/tmp}") ;; esac
+  exec watch -t -n 1 -c "${WOPTS[@]}" "bash '$SCRIPT_PATH' --render"
 fi
 
 # Icon setup (auto-detect Nerd Fonts)
@@ -17,8 +24,127 @@ else
   ICON_FILE="Δ"
 fi
 
+# Terminal geometry. watch exports COLUMNS/LINES; under $(...) the TIOCGWINSZ
+# ioctl fails, so the env var is the only reliable signal.
+cols=${COLUMNS:-$(tput cols 2>/dev/null)}
+case "$cols" in *[!0-9]*|"") cols=80 ;; esac
+[ "$cols" -lt 20 ] && cols=80
+rows=${LINES:-$(tput lines 2>/dev/null)}
+case "$rows" in *[!0-9]*|"") rows=24 ;; esac
+
 # Track lines used for dynamic commit count
 lines_used=0
+
+TAB=$(printf "\t")
+ESC=$(printf "\033")
+NL="
+"
+GRN="${ESC}[32m"
+RED="${ESC}[31m"
+YEL="${ESC}[33m"
+DIM="${ESC}[2m"
+RST="${ESC}[0m"
+
+# Signed human-readable byte count: 25074 -> +24K
+hsize() {
+  n=$1
+  [ "$n" -eq 0 ] && echo "0B" && return
+  sgn=+
+  if [ "$n" -lt 0 ]; then sgn=-; n=$((0 - n)); fi
+  if [ "$n" -lt 1024 ]; then echo "${sgn}${n}B"
+  elif [ "$n" -lt 1048576 ]; then echo "${sgn}$((n / 1024))K"
+  else echo "${sgn}$((n / 1048576))M"; fi
+}
+
+# Render "path<TAB>plain<TAB>colored" rows as an aligned table that fits in $cols.
+# Width math only ever touches the plain field, never the colored one, so ANSI
+# escapes cannot corrupt the alignment.
+render_table() {
+  rt_rows=$1
+  rt_maxstat=0
+  rt_maxname=0
+  while IFS="$TAB" read -r p s c; do
+    [ -z "$p" ] && continue
+    [ ${#s} -gt $rt_maxstat ] && rt_maxstat=${#s}
+  done <<< "$rt_rows"
+  # overhead: leading space (1) + " | " (3)
+  rt_avail=$((cols - 4 - rt_maxstat))
+  [ $rt_avail -lt 8 ] && rt_avail=8
+  rt_out=""
+  while IFS="$TAB" read -r p s c; do
+    [ -z "$p" ] && continue
+    if [ ${#p} -gt $rt_avail ]; then
+      t=${p: -$((rt_avail - 4))}
+      t=${t#*/}
+      p=".../$t"
+    fi
+    [ ${#p} -gt $rt_maxname ] && rt_maxname=${#p}
+    rt_out="${rt_out}${p}${TAB}${s}${TAB}${c}${NL}"
+  done <<< "$rt_rows"
+  while IFS="$TAB" read -r p s c; do
+    [ -z "$p" ] && continue
+    printf " %-${rt_maxname}s | %*s%s\n" "$p" $((rt_maxstat - ${#s})) "" "$c"
+  done <<< "$rt_out"
+}
+
+# Emit "path<TAB>plain<TAB>colored" rows for a diff. $1 is --cached or empty.
+# numstat gives the counts and an untruncated path; --stat is consulted only for
+# binary rows, to scrape the "Bin <old> -> <new> bytes" sizes. Both emit rows in
+# the same order, so they are joined by line index rather than by path.
+diff_rows() {
+  dr_ns=$(git diff $1 --numstat 2>/dev/null)
+  [ -z "$dr_ns" ] && return
+  # An unmerged path appears more than once in --numstat: a 0/0 placeholder plus
+  # a row with the real counts. Keep one row per path, the one with most churn.
+  dr_ns=$(printf "%s\n" "$dr_ns" | awk -F"$TAB" "{
+    k = \$3
+    s = (\$1 == \"-\") ? 2147483647 : \$1 + \$2
+    if (!(k in seen)) { seen[k] = ++n; ord[n] = k; best[k] = \$0; sc[k] = s }
+    else if (s > sc[k]) { best[k] = \$0; sc[k] = s }
+  } END { for (i = 1; i <= n; i++) print best[ord[i]] }")
+  dr_st=""
+  case "$dr_ns" in
+    *"-${TAB}-${TAB}"*)
+      # anchor the summary-line match: an unmerged --stat entry can itself
+      # contain the text "1 file changed" without being the summary
+      dr_st=$(git diff $1 --stat=400 2>/dev/null | sed "/^ *[0-9][0-9]* files\{0,1\} changed/d")
+      # the line-index join only holds when both sides have one row per file
+      if [ "$(printf "%s\n" "$dr_ns" | wc -l)" != "$(printf "%s\n" "$dr_st" | wc -l)" ]; then
+        dr_st=""
+      fi
+      ;;
+  esac
+  while IFS="$TAB" read -r add del path <&3; do
+    [ -z "$path" ] && continue
+    IFS= read -r sline <&4 || sline=""
+    if [ "$add" = "-" ]; then
+      rest=${sline#*Bin }
+      old=${rest%% *}
+      rest=${rest#*-> }
+      new=${rest%% *}
+      case "$old" in *[!0-9]*|"") old=0 ;; esac
+      case "$new" in *[!0-9]*|"") new=0 ;; esac
+      d=$((new - old))
+      plain=$(hsize $d)
+      if [ $d -lt 0 ]; then colored="${RED}${plain}${RST}"
+      elif [ $d -gt 0 ]; then colored="${GRN}${plain}${RST}"
+      else colored="${DIM}${plain}${RST}"; fi
+    else
+      case "$add" in *[!0-9]*|"") add=0 ;; esac
+      case "$del" in *[!0-9]*|"") del=0 ;; esac
+      plain=""
+      colored=""
+      if [ "$add" -gt 0 ]; then plain="+$add"; colored="${GRN}+${add}${RST}"; fi
+      if [ "$del" -gt 0 ]; then
+        if [ -n "$plain" ]; then plain="$plain "; colored="$colored "; fi
+        plain="$plain-$del"
+        colored="${colored}${RED}-${del}${RST}"
+      fi
+      if [ -z "$plain" ]; then plain="0"; colored="${DIM}0${RST}"; fi
+    fi
+    printf "%s${TAB}%s${TAB}%s\n" "$path" "$plain" "$colored"
+  done 3<<< "$dr_ns" 4<<< "$dr_st"
+}
 
 # Branch + sync status
 branch=$(git branch --show-current)
@@ -42,25 +168,23 @@ lines_used=$((lines_used + 1))
 echo ""
 lines_used=$((lines_used + 1))
 
-# Staged changes (without summary)
-staged=$(git diff --cached --stat --color)
-if [ -n "$staged" ]; then
+# Staged changes
+staged_rows=$(diff_rows --cached)
+if [ -n "$staged_rows" ]; then
   printf "\033[94m● staged\033[0m\n"
-  staged_output=$(echo "$staged" | sed "/files\{0,1\} changed/d")
-  echo "$staged_output"
+  render_table "$staged_rows"
   echo ""
-  staged_lines=$(echo "$staged_output" | wc -l | tr -d " ")
+  staged_lines=$(printf "%s\n" "$staged_rows" | wc -l | tr -d " ")
   lines_used=$((lines_used + 1 + staged_lines + 1))
 fi
 
-# Unstaged changes (without summary)
-unstaged=$(git diff --stat --color)
-if [ -n "$unstaged" ]; then
+# Unstaged changes
+unstaged_rows=$(diff_rows)
+if [ -n "$unstaged_rows" ]; then
   printf "\033[36m○ unstaged\033[0m\n"
-  unstaged_output=$(echo "$unstaged" | sed "/files\{0,1\} changed/d")
-  echo "$unstaged_output"
+  render_table "$unstaged_rows"
   echo ""
-  unstaged_lines=$(echo "$unstaged_output" | wc -l | tr -d " ")
+  unstaged_lines=$(printf "%s\n" "$unstaged_rows" | wc -l | tr -d " ")
   lines_used=$((lines_used + 1 + unstaged_lines + 1))
 fi
 
@@ -68,41 +192,26 @@ fi
 untracked=$(git status --porcelain -uall | grep "^??" | cut -c4- | sed "s/^\"//;s/\"$//")
 if [ -n "$untracked" ]; then
   printf "\033[33m◌ untracked\033[0m\n"
-  cols=$(tput cols 2>/dev/null || echo 80)
-  # First pass: collect raw data and find max line count
-  rawdata=""
-  maxlines=0
+  urows=""
   untracked_count=0
-  while read -r file; do
-    lines=$(wc -l < "$file" 2>/dev/null | tr -d " ")
-    [ -z "$lines" ] && lines=0
-    [ $lines -gt $maxlines ] && maxlines=$lines
-    rawdata="${rawdata}${file}|${lines}\n"
+  while IFS= read -r file; do
+    [ -z "$file" ] && continue
+    # one git call yields both the binary flag and the line count.
+    # -- keeps a leading-dash filename from being parsed as an option.
+    info=$(git diff --no-index --numstat -- /dev/null "$file" 2>/dev/null | head -1)
+    add=${info%%"$TAB"*}
+    if [ "$add" = "-" ]; then
+      sz=$(wc -c < "$file" 2>/dev/null | tr -d " ")
+      case "$sz" in *[!0-9]*|"") sz=0 ;; esac
+      plain=$(hsize $sz)
+    else
+      case "$add" in *[!0-9]*|"") add=0 ;; esac
+      plain="+$add"
+    fi
+    urows="${urows}${file}${TAB}${plain}${TAB}${YEL}${plain}${RST}${NL}"
     untracked_count=$((untracked_count + 1))
   done <<< "$untracked"
-  # Calculate number width and available space for names
-  # Overhead: " " (1) + " | " (3) + number (numwidth)
-  numwidth=${#maxlines}
-  [ $numwidth -lt 3 ] && numwidth=3
-  maxavail=$((cols - 4 - numwidth))
-  # Second pass: truncate names and find max display width
-  data=""
-  maxname=0
-  while IFS="|" read -r file lines; do
-    [ -z "$file" ] && continue
-    display="$file"
-    if [ ${#file} -gt $maxavail ]; then
-      tail="${file: -$((maxavail - 4))}"
-      tail="${tail#*/}"
-      display=".../$tail"
-    fi
-    [ ${#display} -gt $maxname ] && maxname=${#display}
-    data="${data}${display}|${lines}\n"
-  done <<< "$(printf "%b" "$rawdata")"
-  # Print aligned
-  printf "%b" "$data" | while IFS="|" read -r name count; do
-    [ -n "$name" ] && printf " %-${maxname}s | \033[33m%${numwidth}d\033[0m\n" "$name" "$count"
-  done
+  render_table "$urows"
   echo ""
   lines_used=$((lines_used + 1 + untracked_count + 1))
 fi
@@ -133,8 +242,6 @@ echo ""
 lines_used=$((lines_used + 1))
 
 # Commits (fill remaining vertical space)
-cols=$(tput cols 2>/dev/null || echo 40)
-rows=$(tput lines 2>/dev/null || echo 24)
 remote_hash=$(git rev-parse @{u} 2>/dev/null)
 avail_rows=$((rows - lines_used))
 [ $avail_rows -lt 1 ] && avail_rows=1
